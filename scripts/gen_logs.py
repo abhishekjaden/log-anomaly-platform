@@ -77,10 +77,11 @@ def _normal_line(rng: random.Random, dt: datetime) -> str:
 def _attack_line(rng: random.Random, dt: datetime) -> str:
     ip = _rand_ip(rng)
     path, query = rng.choice(_ATTACKS)
-    target = f"{path}?{query}"
+    # real clients %-encode spaces; this keeps the payload intact in the request line
+    target = f"{path}?{query}".replace(" ", "%20")
     status = rng.choice([200, 400, 403, 500])
     nbytes = rng.randint(0, 1500)
-    ua = rng.choice(_TOOL_UAS + _UAS)  # attackers sometimes spoof real UAs
+    ua = rng.choice(_TOOL_UAS + _UAS)
     return (f'{ip} - - [{_fmt_time(dt)}] "GET {target} HTTP/1.1" '
             f'{status} {nbytes if nbytes else "-"} "-" "{ua}"')
 
