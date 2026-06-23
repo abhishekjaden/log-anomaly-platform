@@ -11,6 +11,12 @@ def _client():
     return TestClient(app)
 
 
+def test_index_served():
+    r = _client().get("/")
+    assert r.status_code == 200
+    assert "text/html" in r.headers["content-type"]
+
+
 def test_health():
     r = _client().get("/health")
     assert r.status_code == 200

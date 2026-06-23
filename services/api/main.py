@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 """
-services/api — FastAPI scan service.
+services/api — FastAPI scan service + web UI.
 
-POST a combined-format access log; get back a structured scan report: summary stats
-plus the flagged anomalies and the features that drove each flag. This is the
-user-facing surface -- the endpoint a real user (or the frontend) hits to scan logs.
+GET  /         -> the scanner web page (upload a log, see the report)
+GET  /health   -> model/health probe
+POST /scan     -> structured scan report for an uploaded combined-format access log
+
+This is the user-facing surface -- the endpoint(s) a real user (or the frontend) hits.
 """
 from __future__ import annotations
 
 import os
 from functools import lru_cache
+from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse
 
 from lap.detector import Detector
 
 MODEL_PATH = os.environ.get("MODEL_PATH", "ml/models/detector.pt")
 MAX_ANOMALIES = 200
+STATIC_DIR = Path(__file__).parent / "static"
 
 app = FastAPI(title="Log Anomaly Scanner", version="0.1.0")
 
@@ -24,6 +29,11 @@ app = FastAPI(title="Log Anomaly Scanner", version="0.1.0")
 @lru_cache(maxsize=1)
 def get_detector() -> Detector:
     return Detector(MODEL_PATH)
+
+
+@app.get("/")
+def index():
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get("/health")
