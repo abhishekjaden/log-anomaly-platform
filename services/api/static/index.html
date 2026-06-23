@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Access Log Anomaly Scanner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0c0e13; --panel:#14171f; --raised:#1b1f2a; --hair:#272c38;
+    --text:#e7e9ee; --muted:#8b91a0; --faint:#5b616f;
+    --signal:#e8964e; --signal-soft:rgba(232,150,78,.14);
+    --clean:#56b89a; --focus:#6ea8fe;
+    --crit:#e5644e;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --display:'Space Grotesk',system-ui,sans-serif;
+    --body:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ink);color:var(--text);font-family:var(--body);
+    line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
+
+  header{border-bottom:1px solid var(--hair)}
+  .bar{display:flex;align-items:center;justify-content:space-between;height:56px}
+  .mark{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.02em}
+  .mark b{color:var(--signal)}
+  .tag{font-family:var(--mono);font-size:11px;color:var(--faint)}
+
+  .hero{padding:54px 0 32px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--signal);margin:0 0 14px}
+  h1{font-family:var(--display);font-weight:600;font-size:30px;line-height:1.15;
+    margin:0 0 10px;letter-spacing:-.01em}
+  .lede{color:var(--muted);max-width:54ch;margin:0}
+
+  .drop{margin-top:26px;border:1px dashed var(--hair);border-radius:12px;
+    background:var(--panel);padding:34px 24px;text-align:center;cursor:pointer;
+    transition:border-color .15s,background .15s}
+  .drop:hover,.drop:focus-visible{border-color:var(--signal);background:var(--raised);outline:none}
+  .drop.over{border-color:var(--signal);background:var(--signal-soft)}
+  .drop.busy{cursor:progress;border-style:solid;border-color:var(--signal)}
+  .drop svg{width:26px;height:26px;color:var(--faint);margin-bottom:10px}
+  .drop .big{font-family:var(--display);font-weight:500;font-size:16px}
+  .drop .sub{color:var(--muted);font-size:13px;margin-top:4px}
+  .drop .sub a{color:var(--focus);text-decoration:none;border-bottom:1px solid transparent}
+  .drop .sub a:hover{border-color:var(--focus)}
+  .pulse{display:inline-block;width:8px;height:8px;border-radius:50%;
+    background:var(--signal);margin-right:7px;animation:p 1s ease-in-out infinite}
+  @keyframes p{0%,100%{opacity:.3}50%{opacity:1}}
+
+  .results{padding:8px 0 64px;display:none}
+  .results.show{display:block;animation:rise .35s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--hair);border:1px solid var(--hair);border-radius:12px;overflow:hidden;margin-bottom:24px}
+  .stat{background:var(--panel);padding:18px 16px}
+  .stat .n{font-family:var(--mono);font-size:24px;font-weight:700}
+  .stat .n.flag{color:var(--signal)}
+  .stat .l{font-size:12px;color:var(--muted);margin-top:3px}
+  @media(max-width:620px){.summary{grid-template-columns:repeat(2,1fr)}}
+
+  .clean{background:var(--panel);border:1px solid var(--hair);border-radius:12px;
+    padding:28px;text-align:center;color:var(--clean);font-family:var(--display);font-weight:500}
+
+  .seclabel{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--faint);margin:0 0 12px}
+
+  .card{background:var(--panel);border:1px solid var(--hair);border-radius:12px;
+    padding:16px 18px;margin-bottom:10px;border-left:2px solid var(--signal)}
+  .row1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+  .ln{font-family:var(--mono);font-size:12px;color:var(--faint)}
+  .method{font-family:var(--mono);font-weight:700;font-size:12px;color:var(--text)}
+  .req{font-family:var(--mono);font-size:13px;word-break:break-all;color:var(--text);margin:2px 0 12px}
+  .req mark{background:var(--signal-soft);color:var(--signal);border-radius:3px;padding:0 2px}
+  .pill{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:999px;border:1px solid var(--hair)}
+  .pill.s2{color:var(--clean)} .pill.s3{color:var(--faint)}
+  .pill.s4{color:var(--signal)} .pill.s5{color:var(--crit);border-color:var(--crit)}
+
+  .meter{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .track{flex:1;height:6px;background:var(--raised);border-radius:999px;overflow:hidden}
+  .fill{height:100%;background:linear-gradient(90deg,var(--signal),var(--crit));border-radius:999px}
+  .sev{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+
+  .drivers{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .drivers .lbl{font-size:12px;color:var(--faint)}
+  .chip{font-family:var(--mono);font-size:11px;background:var(--raised);
+    border:1px solid var(--hair);border-radius:6px;padding:2px 8px;color:var(--muted)}
+
+  .note{font-size:12px;color:var(--faint);margin-top:14px;text-align:center}
+  .error{background:var(--panel);border:1px solid var(--crit);border-radius:12px;
+    padding:20px;color:var(--text)}
+  .error b{color:var(--crit)}
+  footer{border-top:1px solid var(--hair);padding:20px 0;color:var(--faint);font-size:12px}
+
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap bar">
+  <div class="mark">log<b>·</b>anomaly scanner</div>
+  <div class="tag">unsupervised · autoencoder</div>
+</div></header>
+
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">Detect what doesn't look normal</p>
+    <h1>Scan an access log for anomalous requests.</h1>
+    <p class="lede">Drop an nginx or Apache combined-format access log. The model
+      learned what normal traffic looks like and flags requests that deviate —
+      injection, traversal, scanners — and tells you which signals gave them away.</p>
+
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Upload an access log">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
+      </svg>
+      <div class="big" id="dropbig">Drop an access log here</div>
+      <div class="sub" id="dropsub">or click to choose a file &nbsp;·&nbsp; <a href="#" id="sample">load a sample log</a></div>
+      <input type="file" id="file" accept=".log,.txt,text/plain" hidden>
+    </div>
+  </section>
+
+  <section class="results" id="results"></section>
+</main>
+
+<footer class="wrap">Portfolio project — built with production-grade practices. Synthetic and user-supplied data only.</footer>
+
+<script>
+const $ = s => document.querySelector(s);
+const drop = $('#drop'), fileInput = $('#file'), results = $('#results');
+const dropbig = $('#dropbig'), dropsub = $('#dropsub');
+
+const SAMPLE = [
+ '203.0.113.10 - - [01/Jun/2026:09:00:01 +0000] "GET /index.html HTTP/1.1" 200 2326 "https://www.google.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"',
+ '203.0.113.11 - - [01/Jun/2026:09:00:05 +0000] "GET /search?q=headphones HTTP/1.1" 200 1820 "https://www.google.com/" "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148"',
+ '198.51.100.7 - - [01/Jun/2026:09:00:08 +0000] "GET /search?q=<script>alert(1)<\/script> HTTP/1.1" 200 100 "-" "sqlmap/1.8"',
+ '203.0.113.12 - - [01/Jun/2026:09:00:12 +0000] "POST /search?q=laptop HTTP/1.1" 200 3975 "https://example.com/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"',
+ '203.0.113.13 - - [01/Jun/2026:09:00:16 +0000] "GET /products/1042 HTTP/1.1" 200 4100 "https://example.com/" "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Mobile Safari/537.36"',
+ '198.51.100.9 - - [01/Jun/2026:09:00:20 +0000] "GET /products?id=1%20UNION%20SELECT%20username,password%20FROM%20users-- HTTP/1.1" 500 80 "-" "python-requests/2.31"',
+ '203.0.113.14 - - [01/Jun/2026:09:00:24 +0000] "GET /blog/best-laptops-2026 HTTP/1.1" 200 5300 "https://www.bing.com/search" "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0"',
+ '203.0.113.15 - - [01/Jun/2026:09:00:28 +0000] "GET /account HTTP/1.1" 200 7750 "https://example.com/" "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15"',
+ '198.51.100.11 - - [01/Jun/2026:09:00:31 +0000] "GET /download?file=../../../../etc/passwd HTTP/1.1" 403 50 "-" "Nikto/2.5.0"',
+ '203.0.113.16 - - [01/Jun/2026:09:00:35 +0000] "GET /static/app.css HTTP/1.1" 200 900 "https://example.com/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"',
+ '203.0.113.17 - - [01/Jun/2026:09:00:39 +0000] "POST /login HTTP/1.1" 200 640 "https://example.com/" "Mozilla/5.0 (X11; Linux x86_64; rv:125.0) Gecko/20100101 Firefox/125.0"',
+ '198.51.100.13 - - [01/Jun/2026:09:00:43 +0000] "GET /profile?name=<svg/onload=alert(1)> HTTP/1.1" 400 60 "-" "curl/8.6.0"',
+].join('\n');
+
+const esc = s => (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const SUS = /(&lt;|&gt;|&#39;|&quot;|script|alert|onerror|onload|svg|iframe|union|select|insert|drop|--|or |1=1|\.\.\/|etc\/passwd|cmd=|exec|%3c|%3e|%27|%20)/gi;
+const hl = s => esc(s).replace(SUS, m => `<mark>${m}</mark>`);
+const sClass = st => st>=500?'s5':st>=400?'s4':st>=300?'s3':'s2';
+
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('keydown', e => { if(e.key==='Enter'||e.key===' '){e.preventDefault();fileInput.click();} });
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', e => {
+  e.preventDefault(); drop.classList.remove('over');
+  if(e.dataTransfer.files.length) scan(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => { if(fileInput.files.length) scan(fileInput.files[0]); });
+$('#sample').addEventListener('click', e => {
+  e.preventDefault();
+  scan(new File([SAMPLE], 'sample-access.log', {type:'text/plain'}));
+});
+
+async function scan(file){
+  drop.classList.add('busy');
+  dropbig.innerHTML = '<span class="pulse"></span>Scanning ' + esc(file.name);
+  dropsub.textContent = '';
+  results.className = 'results';
+  try{
+    const fd = new FormData(); fd.append('file', file);
+    const r = await fetch('/scan', {method:'POST', body:fd});
+    if(!r.ok){ const d = await r.json().catch(()=>({})); throw new Error(d.detail || ('HTTP '+r.status)); }
+    render(await r.json());
+  }catch(err){
+    results.innerHTML = `<div class="error"><b>Scan failed.</b> ${esc(err.message)}<br>
+      Check the file is a combined-format access log, then try again.</div>`;
+    results.className = 'results show';
+  }finally{
+    drop.classList.remove('busy');
+    dropbig.textContent = 'Drop an access log here';
+    dropsub.innerHTML = 'or click to choose a file &nbsp;·&nbsp; <a href="#" id="sample">load a sample log</a>';
+    $('#sample').addEventListener('click', e => { e.preventDefault(); scan(new File([SAMPLE],'sample-access.log',{type:'text/plain'})); });
+  }
+}
+
+function render(data){
+  const s = data.summary, a = data.anomalies || [];
+  const rate = (s.anomaly_rate*100).toFixed(1);
+  let html = `<div class="summary">
+    <div class="stat"><div class="n">${s.parsed.toLocaleString()}</div><div class="l">requests parsed</div></div>
+    <div class="stat"><div class="n flag">${s.anomalies.toLocaleString()}</div><div class="l">anomalies flagged</div></div>
+    <div class="stat"><div class="n">${rate}%</div><div class="l">anomaly rate</div></div>
+    <div class="stat"><div class="n">${s.threshold.toFixed(2)}</div><div class="l">score threshold</div></div>
+  </div>`;
+
+  if(!a.length){
+    html += `<div class="clean">No anomalies above threshold — this traffic looks normal.</div>`;
+  }else{
+    const max = Math.max(...a.map(x=>x.score));
+    html += `<p class="seclabel">Flagged requests · highest severity first</p>`;
+    for(const x of a){
+      const over = (x.score / s.threshold).toFixed(1);
+      const w = Math.max(6, (x.score/max)*100).toFixed(0);
+      const q = x.query ? `?${hl(x.query)}` : '';
+      const chips = (x.drivers||[]).map(d=>`<span class="chip">${esc(d)}</span>`).join('');
+      html += `<div class="card">
+        <div class="row1">
+          <span class="ln">line ${x.line_no}</span>
+          <span class="method">${esc(x.method||'?')}</span>
+          <span class="pill ${sClass(x.status)}">${x.status}</span>
+        </div>
+        <div class="req">${esc(x.path)}${q}</div>
+        <div class="meter">
+          <div class="track"><div class="fill" style="width:${w}%"></div></div>
+          <span class="sev">${over}× over threshold</span>
+        </div>
+        <div class="drivers"><span class="lbl">flagged on</span>${chips}</div>
+      </div>`;
+    }
+    if(data.truncated) html += `<p class="note">Showing the top ${a.length} anomalies; more were found.</p>`;
+  }
+  results.innerHTML = html;
+  results.className = 'results show';
+  results.scrollIntoView({behavior:'smooth', block:'start'});
+}
+</script>
+</body>
+</html>
