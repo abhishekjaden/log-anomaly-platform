@@ -1,0 +1,59 @@
+# Phase 1 services, all running the single lap-services:local image with different
+# commands. Joins the Kafka stack's network (infra/docker-compose.yml, project "lap")
+# so every service reaches the broker at kafka:9092 over the Docker network.
+#
+# Bring up Kafka first (docker compose -f docker-compose.yml up -d), then this file.
+name: lap
+
+services:
+  ingestion:
+    image: lap-services:local
+    container_name: lap-ingestion
+    command: python -m services.ingestion.main
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+    restart: unless-stopped
+
+  inference:
+    image: lap-services:local
+    container_name: lap-inference
+    command: python -m services.inference.main
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+    restart: unless-stopped
+
+  storage:
+    image: lap-services:local
+    container_name: lap-storage
+    command: python -m services.results.consumer
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      RESULTS_DB: /data/results.db
+    volumes:
+      - results-db:/data
+    restart: unless-stopped
+
+  results-api:
+    image: lap-services:local
+    container_name: lap-results-api
+    command: uvicorn services.results.api:app --host 0.0.0.0 --port 9100
+    environment:
+      RESULTS_DB: /data/results.db
+    volumes:
+      - results-db:/data
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+
+  producer:
+    image: lap-services:local
+    container_name: lap-producer
+    command: python -m services.producer.main --file /samples/access_mixed.log --rate 10 --loop
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+    volumes:
+      - ../data/sample:/samples:ro
+    restart: unless-stopped
+
+volumes:
+  results-db:
