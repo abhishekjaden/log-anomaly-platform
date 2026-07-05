@@ -10,7 +10,9 @@ ENV PYTHONUNBUFFERED=1 PIP_NO_CACHE_DIR=1
 # install the package first (deps: numpy, torch) for layer caching
 COPY pyproject.toml ./
 COPY lap/ ./lap/
-RUN pip install --no-cache-dir . \
+# CPU-only torch first (from the CPU index) so `pip install .` doesn't pull the ~5GB CUDA build
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
+ && pip install --no-cache-dir . \
  && pip install --no-cache-dir kafka-python>=2.0.2 fastapi>=0.110 "uvicorn[standard]>=0.29" python-multipart>=0.0.9
 
 # app code + model + data dir for the SQLite/results db
