@@ -13,7 +13,7 @@ COPY lap/ ./lap/
 # CPU-only torch first (from the CPU index) so `pip install .` doesn't pull the ~5GB CUDA build
 RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch \
  && pip install --no-cache-dir . \
- && pip install --no-cache-dir kafka-python>=2.0.2 fastapi>=0.110 "uvicorn[standard]>=0.29" python-multipart>=0.0.9
+&& pip install --no-cache-dir kafka-python>=2.0.2 fastapi>=0.110 "uvicorn[standard]>=0.29" python-multipart>=0.0.9 boto3>=1.34
 
 # app code + model + data dir for the SQLite/results db
 COPY services/ ./services/

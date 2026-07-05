@@ -1,0 +1,33 @@
+{
+  "family": "lap-proof",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "executionRoleArn": "arn:aws:iam::271598835195:role/lap-ecs-execution",
+  "taskRoleArn": "arn:aws:iam::271598835195:role/lap-ecs-task",
+  "containerDefinitions": [
+    {
+      "name": "lap-proof",
+      "image": "271598835195.dkr.ecr.ap-south-1.amazonaws.com/lap-services:v2",
+      "essential": true,
+      "environment": [
+        { "name": "MODEL_S3_URI", "value": "s3://lap-artifacts-271598835195/models/detector.pt" },
+        { "name": "MODEL_CACHE", "value": "/tmp/detector.pt" },
+        { "name": "AWS_REGION", "value": "ap-south-1" }
+      ],
+      "command": [
+        "python", "-c",
+        "from lap.model_store import resolve_model_path; from lap.detector import Detector; p=resolve_model_path(); d=Detector(p); print('FARGATE PROOF: model pulled from S3, threshold', round(d.threshold,4)); lines=open('data/sample/access_mixed.log').read().splitlines()[:200]; res=d.score_lines(lines); a=sum(1 for r in res if r.is_anomaly); print(f'FARGATE PROOF: scored {len(res)} lines, {a} anomalies')"
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/lap",
+          "awslogs-region": "ap-south-1",
+          "awslogs-stream-prefix": "proof"
+        }
+      }
+    }
+  ]
+}
