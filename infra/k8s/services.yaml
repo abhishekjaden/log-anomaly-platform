@@ -1,0 +1,54 @@
+# Pipeline services as Deployments on EKS.
+# - use lap-sa (IRSA) for S3 + DynamoDB access, no baked-in keys
+# - pull the model from S3 at startup via model_store
+# - inference is the CPU-bound service we'll autoscale (HPA) next session
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion
+  namespace: lap
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: ingestion }
+  template:
+    metadata:
+      labels: { app: ingestion }
+    spec:
+      serviceAccountName: lap-sa
+      containers:
+        - name: ingestion
+          image: 271598835195.dkr.ecr.ap-south-1.amazonaws.com/lap-services:v2
+          command: ["python", "-m", "services.ingestion.main"]
+          env:
+            - { name: KAFKA_BOOTSTRAP, value: "kafka:9092" }
+            - { name: AWS_REGION, value: "ap-south-1" }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "300m", memory: "512Mi" }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference
+  namespace: lap
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: inference }
+  template:
+    metadata:
+      labels: { app: inference }
+    spec:
+      serviceAccountName: lap-sa
+      containers:
+        - name: inference
+          image: 271598835195.dkr.ecr.ap-south-1.amazonaws.com/lap-services:v2
+          command: ["python", "-m", "services.inference.main"]
+          env:
+            - { name: KAFKA_BOOTSTRAP, value: "kafka:9092" }
+            - { name: AWS_REGION, value: "ap-south-1" }
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits: { cpu: "500m", memory: "768Mi" }

@@ -1,0 +1,18 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: producer
+  namespace: lap
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: lap-sa
+      restartPolicy: Never
+      containers:
+        - name: producer
+          image: 271598835195.dkr.ecr.ap-south-1.amazonaws.com/lap-services:v2
+          command: ["sh", "-c",
+                    "python -c \"import random,datetime; ua='Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0'; atk=['/products?id=1%20UNION%20SELECT%20pass%20FROM%20users--','/search?q=<script>alert(1)</script>','/download?file=../../../../etc/passwd']; norm=['/index.html','/search?q=shoes','/products/42','/about','/api/v1/cart']; f=open('/tmp/access.log','w'); t=datetime.datetime(2026,6,1,8,0,0)\nfor i in range(2100):\n  t+=datetime.timedelta(seconds=1); a=i%20==0; p=random.choice(atk if a else norm); s=random.choice([200,403,404]) if a else random.choice([200,200,304]); f.write(f'1.2.3.{i%255} - - [{t:%d/%b/%Y:%H:%M:%S} +0000] \\\"GET {p} HTTP/1.1\\\" {s} {random.randint(80,5000)} \\\"-\\\" \\\"{ua}\\\"\\n')\nf.close()\" && python -m services.producer.main --file /tmp/access.log --rate 50"]
+          env:
+            - { name: KAFKA_BOOTSTRAP, value: "kafka:9092" }

@@ -17,6 +17,8 @@ RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 
 
 # app code + model + data dir for the SQLite/results db
 COPY services/ ./services/
+COPY services/ ./services/
+COPY scripts/ ./scripts/
 COPY ml/models/detector.pt ./ml/models/detector.pt
 RUN mkdir -p data
 
