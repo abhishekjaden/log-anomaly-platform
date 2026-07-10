@@ -1,0 +1,31 @@
+# Horizontal Pod Autoscaler for the inference service.
+# Scales replicas 1->6 based on CPU utilization vs the pod's CPU request (250m).
+# When load drives inference CPU past 50% of request, HPA adds pods.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: inference
+  namespace: lap
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: inference
+  minReplicas: 1
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0     # scale up fast for the demo
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 30    # scale down a bit slower

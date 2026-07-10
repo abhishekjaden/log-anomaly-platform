@@ -1,0 +1,23 @@
+# Load generator: floods the pipeline to spike inference CPU and trigger HPA.
+# High rate + generates a large corpus so inference scores continuously.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: loadgen
+  namespace: lap
+spec:
+  parallelism: 3            # 3 producers in parallel for real pressure
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: lap-sa
+      restartPolicy: Never
+      containers:
+        - name: loadgen
+          image: 271598835195.dkr.ecr.ap-south-1.amazonaws.com/lap-services:v2
+          command: ["sh", "-c",
+                    "python scripts/gen_logs.py --n-normal 8000 --n-attacks 400 && python -m services.producer.main --file data/sample/access_mixed.log --rate 500 --loop"]
+          env:
+            - { name: KAFKA_BOOTSTRAP, value: "kafka:9092" }
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
