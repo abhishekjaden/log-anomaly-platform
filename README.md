@@ -106,6 +106,7 @@ a synchronous scanner (upload a log, get a report) — both backed by the same m
 ```bash
 python -m venv .venv && source .venv/Scripts/activate   # Windows Git Bash
 pip install -e .
+python scripts/gen_logs.py             # generate the training corpus (seeded, reproducible)
 python ml/training/train.py            # trains the model -> ml/models/detector.pt
 uvicorn services.api.main:app --port 9000
 # open http://localhost:9000 and click "load a sample log"
@@ -114,6 +115,7 @@ uvicorn services.api.main:app --port 9000
 ### Option B — full streaming pipeline (Docker)
 
 ```bash
+python scripts/gen_logs.py                            # generate sample data first
 docker build -t lap-services:local .
 
 cd infra
