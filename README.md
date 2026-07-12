@@ -10,7 +10,8 @@ Kubernetes (EKS) deployment.
 
 **[https://seevkvdmnk.ap-south-1.awsapprunner.com](https://seevkvdmnk.ap-south-1.awsapprunner.com)**
 
-Drop in an nginx/Apache access log — or click *"load a sample log"* — and get back
+Drop in an nginx/Apache access log — or click *"Scan a sample"* — and get back
+
 flagged requests with severity scores and the specific signals that triggered each
 one. No install, no signup.
 
