@@ -6,6 +6,18 @@ an explanation of *why* each was flagged — through both a live pipeline and an
 upload-based scanner. Runs locally on Docker Compose and on AWS as an autoscaling
 Kubernetes (EKS) deployment.
 
+### 🔍 Try it live
+
+**[https://seevkvdmnk.ap-south-1.awsapprunner.com](https://seevkvdmnk.ap-south-1.awsapprunner.com)**
+
+Drop in an nginx/Apache access log — or click *"load a sample log"* — and get back
+flagged requests with severity scores and the specific signals that triggered each
+one. No install, no signup.
+
+The public scanner runs on **AWS App Runner** (a torch-free 338 MB image — inference
+is pure NumPy, see below). The autoscaling EKS deployment is a separate demonstration,
+documented further down.
+
 > **Honest framing.** Built with production-grade infrastructure and engineering
 > practices (streaming backbone, decoupled microservices, containerization,
 > Kubernetes with horizontal autoscaling, IRSA-based cloud auth, tests). It is a
