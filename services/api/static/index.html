@@ -97,6 +97,15 @@
   footer{border-top:1px solid var(--hair);padding:20px 0;color:var(--faint);font-size:12px}
 
   @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.tryline{font-size:13px;color:var(--muted);text-align:center;margin:14px 0 0}
+  .tryline a{color:var(--focus);text-decoration:none;border-bottom:1px solid transparent}
+  .tryline a:hover{border-color:var(--focus)}
+  .wherelogs{margin-top:14px;font-size:13px;color:var(--muted);
+    background:var(--panel);border:1px solid var(--hair);border-radius:10px;padding:12px 16px}
+  .wherelogs summary{cursor:pointer;color:var(--text);font-size:13px}
+  .wherelogs ul{margin:10px 0 0;padding-left:18px;line-height:1.7}
+  .wherelogs code{font-family:var(--mono);font-size:12px;background:var(--raised);
+    padding:1px 5px;border-radius:4px}
 </style>
 </head>
 <body>
@@ -119,9 +128,26 @@
         <path d="M12 16V4M12 4l-4 4M12 4l4 4"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/>
       </svg>
       <div class="big" id="dropbig">Drop an access log here</div>
-      <div class="sub" id="dropsub">or click to choose a file &nbsp;·&nbsp; <a href="#" id="sample">load a sample log</a></div>
+      <div class="sub" id="dropsub">or click to choose a file</div>
       <input type="file" id="file" accept=".log,.txt,text/plain" hidden>
     </div>
+
+    <p class="tryline">
+      No log handy? <a href="#" id="sample">Scan a sample</a>
+      &nbsp;·&nbsp;
+      <a href="/sample-logs/access_mixed.log" download>Download a sample log</a> to try uploading
+    </p>
+
+    <details class="wherelogs">
+      <summary>Where do I find my access logs?</summary>
+      <ul>
+        <li><b>nginx</b> — <code>/var/log/nginx/access.log</code></li>
+        <li><b>Apache</b> — <code>/var/log/apache2/access.log</code> (Debian/Ubuntu) or
+            <code>/var/log/httpd/access_log</code> (RHEL/CentOS)</li>
+        <li>Format must be <b>combined</b>: <code>IP - - [time] "METHOD path HTTP/1.1" status bytes "referer" "user-agent"</code></li>
+        <li>Nothing is stored — the file is scored in memory and discarded.</li>
+      </ul>
+    </details>
   </section>
 
   <section class="results" id="results"></section>
@@ -185,8 +211,7 @@ async function scan(file){
   }finally{
     drop.classList.remove('busy');
     dropbig.textContent = 'Drop an access log here';
-    dropsub.innerHTML = 'or click to choose a file &nbsp;·&nbsp; <a href="#" id="sample">load a sample log</a>';
-    $('#sample').addEventListener('click', e => { e.preventDefault(); scan(new File([SAMPLE],'sample-access.log',{type:'text/plain'})); });
+    dropsub.textContent = 'or click to choose a file';
   }
 }
 

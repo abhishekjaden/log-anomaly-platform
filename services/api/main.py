@@ -22,6 +22,7 @@ from lap.detector_np import NumpyDetector
 MODEL_PATH = os.environ.get("MODEL_PATH", "ml/models/detector.npz")
 MAX_ANOMALIES = 200
 STATIC_DIR = Path(__file__).parent / "static"
+SAMPLES_DIR = Path(__file__).parent / "sample-logs"
 
 app = FastAPI(title="Log Anomaly Scanner", version="0.1.0")
 
@@ -34,6 +35,13 @@ def get_detector() -> NumpyDetector:
 @app.get("/")
 def index():
     return FileResponse(STATIC_DIR / "index.html")
+
+@app.get("/sample-logs/{name}")
+def sample_log(name: str):
+    """Serve a downloadable sample access log so visitors can try the upload path."""
+    if name not in ("access_mixed.log", "access_normal.log"):
+        raise HTTPException(status_code=404, detail="not found")
+    return FileResponse(SAMPLES_DIR / name, media_type="text/plain", filename=name)
 
 
 @app.get("/health")
