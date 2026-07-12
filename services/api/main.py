@@ -34,7 +34,10 @@ def get_detector() -> NumpyDetector:
 
 @app.get("/")
 def index():
-    return FileResponse(STATIC_DIR / "index.html")
+    return FileResponse(
+        STATIC_DIR / "index.html",
+        headers={"Cache-Control": "no-cache, must-revalidate"},
+    )
 
 @app.get("/sample-logs/{name}")
 def sample_log(name: str):
