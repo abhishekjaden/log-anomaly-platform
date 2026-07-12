@@ -17,9 +17,9 @@ from pathlib import Path
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 
-from lap.detector import Detector
+from lap.detector_np import NumpyDetector
 
-MODEL_PATH = os.environ.get("MODEL_PATH", "ml/models/detector.pt")
+MODEL_PATH = os.environ.get("MODEL_PATH", "ml/models/detector.npz")
 MAX_ANOMALIES = 200
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -27,8 +27,8 @@ app = FastAPI(title="Log Anomaly Scanner", version="0.1.0")
 
 
 @lru_cache(maxsize=1)
-def get_detector() -> Detector:
-    return Detector(MODEL_PATH)
+def get_detector() -> NumpyDetector:
+    return NumpyDetector(MODEL_PATH)
 
 
 @app.get("/")
