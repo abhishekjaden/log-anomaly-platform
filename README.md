@@ -8,7 +8,7 @@ Kubernetes (EKS) deployment.
 
 ### 🔍 Try it live
 
-**[https://logscan.dev](https://logscan.dev)**
+**Try it: [logscan.dev](https://logscan.dev)**
 
 Drop in an nginx/Apache access log — or click *"Scan a sample"* — and get back
 
