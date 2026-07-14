@@ -5,3 +5,4 @@ data/
 ml/models/
 .env
 *.egg-info/
+infra/domain-contact.json
