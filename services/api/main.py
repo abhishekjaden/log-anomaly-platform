@@ -14,10 +14,11 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from lap.detector_np import NumpyDetector
+from services.api import stats
 
 MODEL_PATH = os.environ.get("MODEL_PATH", "ml/models/detector.npz")
 MAX_ANOMALIES = 200
@@ -55,18 +56,22 @@ def health():
     except Exception as e:
         raise HTTPException(status_code=503, detail=f"model not loaded: {e}")
 
+@app.get("/stats")
+def usage_stats():
+    """Public usage totals — aggregate tallies only, no log data, no raw IPs."""
+    return stats.get_totals()
 
 @app.post("/scan")
-async def scan(file: UploadFile = File(...)):
+async def scan(request: Request, file: UploadFile = File(...)):
     raw = (await file.read()).decode("utf-8", errors="replace")
     lines = raw.splitlines()
     if not lines:
         raise HTTPException(status_code=400, detail="empty upload")
-
     d = get_detector()
     results = d.score_lines(lines)
     anomalies = sorted((r for r in results if r.is_anomaly), key=lambda r: r.score, reverse=True)
-
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "")
+    stats.record_scan(len(lines), len(anomalies), client_ip)
     return {
         "summary": {
             "filename": file.filename,

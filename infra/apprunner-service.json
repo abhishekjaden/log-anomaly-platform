@@ -5,7 +5,12 @@
       "ImageIdentifier": "271598835195.dkr.ecr.ap-south-1.amazonaws.com/lap-services:scanner",
       "ImageRepositoryType": "ECR",
       "ImageConfiguration": {
-        "Port": "8080"
+        "Port": "8080",
+        "RuntimeEnvironmentVariables": {
+          "AWS_REGION": "ap-south-1",
+          "USAGE_TABLE": "lap-usage",
+          "USAGE_SALT": "logscan-v1"
+        }
       }
     },
     "AutoDeploymentsEnabled": false,
@@ -15,7 +20,8 @@
   },
   "InstanceConfiguration": {
     "Cpu": "0.25 vCPU",
-    "Memory": "0.5 GB"
+    "Memory": "0.5 GB",
+    "InstanceRoleArn": "arn:aws:iam::271598835195:role/lap-apprunner-instance"
   },
   "HealthCheckConfiguration": {
     "Protocol": "HTTP",

@@ -1,0 +1,10 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:UpdateItem", "dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Scan"],
+      "Resource": "arn:aws:dynamodb:ap-south-1:271598835195:table/lap-usage"
+    }
+  ]
+}
